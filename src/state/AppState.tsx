@@ -1,69 +1,18 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { CheckIn, DailyTask, Goal, GoalCategory } from '../types';
-
-const STORAGE_KEY = 'growth30-local-state';
-
-export interface MissionProfile {
-  categories: GoalCategory[];
-  mission: string;
-  commitment: number;
-  onboardingCompleted: boolean;
-  startDate: string | null;
-}
-
-interface AppStateValue {
-  profile: MissionProfile;
-  goals: Goal[];
-  tasks: DailyTask[];
-  checkIns: CheckIn[];
-  completeOnboarding: (profile: Omit<MissionProfile, 'onboardingCompleted' | 'startDate'>) => void;
-  addGoal: (goal: Omit<Goal, 'id' | 'active' | 'color'>) => void;
-  toggleTask: (taskId: string) => void;
-  saveCheckIn: (checkIn: CheckIn) => void;
-  resetLocalState: () => void;
-}
-
-const emptyProfile: MissionProfile = {
-  categories: [], mission: '', commitment: 30, onboardingCompleted: false, startDate: null,
-};
+import { useAuth } from './AuthContext';
+import { getUserCollection, getUserProfile, saveCheckInForUser, saveGoalAndTasks, saveTask, saveUserProfile } from '../lib/firestore';
+export interface MissionProfile { categories: GoalCategory[]; mission: string; commitment: number; onboardingCompleted: boolean; startDate: string | null; }
+interface AppStateValue { profile: MissionProfile; goals: Goal[]; tasks: DailyTask[]; checkIns: CheckIn[]; loading: boolean; error: string; completeOnboarding: (profile: Omit<MissionProfile, 'onboardingCompleted' | 'startDate'>) => Promise<void>; addGoal: (goal: Omit<Goal, 'id' | 'active' | 'color'>) => Promise<void>; toggleTask: (taskId: string) => Promise<void>; saveCheckIn: (checkIn: CheckIn) => Promise<void>; }
+const emptyProfile: MissionProfile = { categories: [], mission: '', commitment: 30, onboardingCompleted: false, startDate: null };
+const colors: Record<GoalCategory, string> = { Mind: 'bg-violet-100 text-violet-700', Fitness: 'bg-emerald-100 text-emerald-700', Health: 'bg-cyan-100 text-cyan-700', Career: 'bg-blue-100 text-blue-700', Education: 'bg-indigo-100 text-indigo-700', Passion: 'bg-fuchsia-100 text-fuchsia-700', Finance: 'bg-amber-100 text-amber-700', Discipline: 'bg-stone-200 text-stone-700', Reading: 'bg-orange-100 text-orange-700', Other: 'bg-slate-100 text-slate-700' };
+const dayKey = () => new Date().toISOString().slice(0, 10);
 const defaultState = { profile: emptyProfile, goals: [] as Goal[], tasks: [] as DailyTask[], checkIns: [] as CheckIn[] };
-const todayKey = () => new Date().toISOString().slice(0, 10);
-
-function colorForCategory(category: GoalCategory) {
-  const colors: Record<GoalCategory, string> = {
-    Mind: 'bg-violet-100 text-violet-700', Fitness: 'bg-emerald-100 text-emerald-700', Health: 'bg-cyan-100 text-cyan-700', Career: 'bg-blue-100 text-blue-700', Education: 'bg-indigo-100 text-indigo-700', Passion: 'bg-fuchsia-100 text-fuchsia-700', Finance: 'bg-amber-100 text-amber-700', Discipline: 'bg-stone-200 text-stone-700', Reading: 'bg-orange-100 text-orange-700', Other: 'bg-slate-100 text-slate-700',
-  };
-  return colors[category];
-}
-
-const AppStateContext = createContext<AppStateValue | null>(null);
-
+const Context = createContext<AppStateValue | null>(null);
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState(defaultState);
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) { try { setState(JSON.parse(saved)); } catch { localStorage.removeItem(STORAGE_KEY); } }
-  }, []);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }, [state]);
-
-  const value = useMemo<AppStateValue>(() => ({
-    ...state,
-    completeOnboarding: (profile) => setState((current) => ({ ...current, profile: { ...profile, onboardingCompleted: true, startDate: profile.startDate ?? todayKey() } })),
-    addGoal: (goal) => setState((current) => {
-      const id = `goal-${Date.now()}`;
-      const newGoal: Goal = { ...goal, id, active: true, color: colorForCategory(goal.category) };
-      const task: DailyTask = { id: `task-${Date.now()}`, goalId: id, title: goal.title, target: `${goal.targetValue} ${goal.targetUnit}`, done: false, progress: 0, category: goal.category, date: todayKey() };
-      return { ...current, goals: [...current.goals, newGoal], tasks: [...current.tasks, task] };
-    }),
-    toggleTask: (taskId) => setState((current) => ({ ...current, tasks: current.tasks.map((task) => task.id === taskId ? { ...task, done: !task.done, progress: task.done ? 0 : 100, completedAt: task.done ? undefined : new Date().toISOString() } : task) })),
-    saveCheckIn: (checkIn) => setState((current) => ({ ...current, checkIns: [...current.checkIns.filter((entry) => entry.date !== checkIn.date), checkIn] })),
-    resetLocalState: () => { localStorage.removeItem(STORAGE_KEY); setState(defaultState); },
-  }), [state]);
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+  const { user } = useAuth(); const [state, setState] = useState(defaultState); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
+  useEffect(() => { let cancelled = false; if (!user) { setState(defaultState); return; } setLoading(true); setError(''); Promise.all([getUserProfile(user.uid), getUserCollection<Goal>('userGoals', user.uid), getUserCollection<DailyTask>('dailyTasks', user.uid), getUserCollection<CheckIn>('dailyCheckIns', user.uid)]).then(([profile, goals, tasks, checkIns]) => { if (!cancelled) setState({ profile: profile ?? emptyProfile, goals, tasks, checkIns }); }).catch((caught) => { if (!cancelled) setError(caught instanceof Error ? caught.message : 'Could not load your journey.'); }).finally(() => { if (!cancelled) setLoading(false); }); return () => { cancelled = true; }; }, [user]);
+  const value = useMemo<AppStateValue>(() => ({ ...state, loading, error, completeOnboarding: async (profile) => { if (!user) throw new Error('Please sign in first.'); const next = { ...profile, onboardingCompleted: true, startDate: dayKey() }; await saveUserProfile(user.uid, next); setState((current) => ({ ...current, profile: next })); }, addGoal: async (goal) => { if (!user) throw new Error('Please sign in first.'); const id = `goal-${crypto.randomUUID()}`; const nextGoal: Goal = { ...goal, id, active: true, color: colors[goal.category] }; await saveGoalAndTasks(user.uid, nextGoal, state.profile.startDate ?? dayKey()); const nextTask: DailyTask = { id: `${id}-${state.profile.startDate ?? dayKey()}`, goalId: id, title: goal.title, target: `${goal.targetValue} ${goal.targetUnit}`, done: false, progress: 0, category: goal.category, date: state.profile.startDate ?? dayKey() }; setState((current) => ({ ...current, goals: [...current.goals, nextGoal], tasks: [...current.tasks, nextTask] })); }, toggleTask: async (taskId) => { if (!user) throw new Error('Please sign in first.'); const current = state.tasks.find((task) => task.id === taskId); if (!current) return; const next = { ...current, done: !current.done, progress: current.done ? 0 : 100, completedAt: current.done ? undefined : new Date().toISOString() }; await saveTask(user.uid, next); setState((value) => ({ ...value, tasks: value.tasks.map((task) => task.id === taskId ? next : task) })); }, saveCheckIn: async (checkIn) => { if (!user) throw new Error('Please sign in first.'); await saveCheckInForUser(user.uid, checkIn); setState((current) => ({ ...current, checkIns: [...current.checkIns.filter((item) => item.date !== checkIn.date), checkIn] })); } }), [state, loading, error, user]);
+  return <Context.Provider value={value}>{children}</Context.Provider>;
 }
-
-export function useAppState() {
-  const context = useContext(AppStateContext);
-  if (!context) throw new Error('useAppState must be used inside AppStateProvider');
-  return context;
-}
+export function useAppState() { const context = useContext(Context); if (!context) throw new Error('useAppState must be used inside AppStateProvider'); return context; }

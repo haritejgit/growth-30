@@ -1,44 +1,5 @@
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import AppShell from '../components/AppShell';
-
-export default function AuthPage() {
-  return (
-    <AppShell>
-      <div className="container-shell flex min-h-[70vh] items-center justify-center">
-        <div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white/80 p-8 shadow-soft">
-          <div className="text-center">
-            <div className="text-sm uppercase tracking-[0.18em] text-stone-500">Welcome back</div>
-            <h1 className="mt-3 text-3xl font-semibold text-stone-900">Log in</h1>
-          </div>
-
-          <form className="mt-8 space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Email</label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700">Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-              />
-            </div>
-
-            <button type="submit" className="primary-button w-full">
-              Continue
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm text-stone-600">
-            New here? <a href="/onboarding" className="font-semibold text-stone-900">Create account</a>
-          </div>
-        </div>
-      </div>
-    </AppShell>
-  );
-}
+import { useAuth } from '../state/AuthContext';
+export default function AuthPage() { const navigate = useNavigate(); const { signIn, signUp, configured, error: authError } = useAuth(); const [mode, setMode] = useState<'login' | 'signup'>('login'); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const submit = async (event: FormEvent) => { event.preventDefault(); setError(''); setBusy(true); try { const user = mode === 'login' ? await signIn(email, password) : await signUp(email, password); navigate(mode === 'signup' ? '/onboarding' : '/app/today'); } catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to continue.'); } finally { setBusy(false); } }; return <AppShell><div className="container-shell flex min-h-[70vh] items-center justify-center"><div className="w-full max-w-md rounded-[2rem] border border-stone-200 bg-white/80 p-8 shadow-soft"><div className="text-center"><div className="text-sm uppercase tracking-[0.18em] text-stone-500">{mode === 'login' ? 'Welcome back' : 'Start your journey'}</div><h1 className="mt-3 text-3xl font-semibold text-stone-900">{mode === 'login' ? 'Log in' : 'Create account'}</h1></div>{!configured && <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm text-amber-800">Firebase is not configured yet. Add your local environment variables to use authentication.</div>}<form onSubmit={submit} className="mt-8 space-y-5"><div><label htmlFor="email" className="mb-2 block text-sm font-medium text-stone-700">Email</label><input id="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@example.com" className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none focus:border-stone-500" /></div><div><label htmlFor="password" className="mb-2 block text-sm font-medium text-stone-700">Password</label><input id="password" required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="At least 6 characters" className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none focus:border-stone-500" /></div>{(error || authError) && <p className="text-sm text-rose-700" role="alert">{error || authError}</p>}<button disabled={busy || !configured} type="submit" className="primary-button w-full disabled:cursor-not-allowed disabled:opacity-50">{busy ? 'Please wait…' : mode === 'login' ? 'Continue' : 'Create account'}</button></form><button type="button" onClick={() => setMode(mode === 'login' ? 'signup' : 'login')} className="mt-6 w-full text-center text-sm font-semibold text-stone-900">{mode === 'login' ? 'New here? Create an account' : 'Already have an account? Log in'}</button><Link to="/" className="mt-4 block text-center text-sm text-stone-500">Back to home</Link></div></div></AppShell>; }
