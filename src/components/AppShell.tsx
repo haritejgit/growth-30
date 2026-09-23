@@ -1,0 +1,75 @@
+import { Link, NavLink } from 'react-router-dom';
+
+const navItems = [
+  { to: '/app/today', label: 'Today' },
+  { to: '/app/goals', label: 'Goals' },
+  { to: '/app/progress', label: 'Progress' },
+  { to: '/app/live', label: 'Live' },
+  { to: '/app/journal', label: 'Journal' },
+  { to: '/app/community', label: 'Community' },
+];
+
+export default function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="app-shell">
+      <header className="border-b border-stone-200 bg-white/80 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-stone-900 text-sm font-bold text-white">
+              G30
+            </div>
+            <div>
+              <div className="text-sm font-medium uppercase tracking-[0.18em] text-stone-500">30-day</div>
+              <div className="text-xl font-semibold text-stone-900">Growth 30</div>
+            </div>
+          </Link>
+
+          <nav className="hidden items-center gap-6 md:flex">
+            {navItems.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `text-sm font-medium transition ${
+                    isActive ? 'text-stone-900' : 'text-stone-500 hover:text-stone-800'
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Link to="/auth" className="secondary-button hidden sm:inline-flex">
+              Log in
+            </Link>
+            <Link to="/onboarding" className="primary-button">
+              Start
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main>{children}</main>
+
+      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-stone-200 bg-white/90 p-3 backdrop-blur md:hidden">
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-2">
+          {navItems.slice(0, 4).map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `rounded-2xl px-3 py-2 text-center text-xs font-medium transition ${
+                  isActive ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700'
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}
