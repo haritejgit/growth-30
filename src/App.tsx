@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { AppStateProvider } from './state/AppState';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import OnboardingPage from './pages/OnboardingPage';
@@ -11,18 +12,10 @@ import CommunityPage from './pages/CommunityPage';
 import AdminDashboard from './pages/AdminDashboard';
 
 export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/onboarding" element={<OnboardingPage />} />
-      <Route path="/app/today" element={<TodayPage />} />
-      <Route path="/app/goals" element={<GoalsPage />} />
-      <Route path="/app/progress" element={<ProgressPage />} />
-      <Route path="/app/live" element={<LivePage />} />
-      <Route path="/app/journal" element={<JournalPage />} />
-      <Route path="/app/community" element={<CommunityPage />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-    </Routes>
-  );
+  return <AppStateProvider><Routes>
+    <Route path="/" element={<LandingPage />} /><Route path="/auth" element={<AuthPage />} /><Route path="/onboarding" element={<OnboardingPage />} />
+    <Route path="/app/today" element={<TodayPage />} /><Route path="/app/goals" element={<GoalsPage />} /><Route path="/app/progress" element={<ProgressPage />} />
+    <Route path="/app/live" element={<LivePage />} /><Route path="/app/journal" element={<JournalPage />} /><Route path="/app/community" element={<CommunityPage />} /><Route path="/admin" element={<AdminDashboard />} />
+    <Route path="*" element={<LandingPage />} />
+  </Routes></AppStateProvider>;
 }

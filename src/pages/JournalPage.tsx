@@ -1,27 +1,9 @@
+import { useState, type FormEvent } from 'react';
 import AppShell from '../components/AppShell';
-
+import { useAppState } from '../state/AppState';
+const today = () => new Date().toISOString().slice(0, 10);
 export default function JournalPage() {
-  return (
-    <AppShell>
-      <div className="container-shell max-w-3xl">
-        <div className="pb-8">
-          <div className="text-sm uppercase tracking-[0.18em] text-stone-500">Journal</div>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-900">Daily reflection</h1>
-        </div>
-
-        <div className="glass-card p-6">
-          <label className="mb-2 block text-sm font-medium text-stone-700">How was your day?</label>
-          <textarea rows={5} className="w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none transition focus:border-stone-500" />
-
-          <label className="mb-2 mt-6 block text-sm font-medium text-stone-700">What did you accomplish?</label>
-          <textarea rows={4} className="w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none transition focus:border-stone-500" />
-
-          <label className="mb-2 mt-6 block text-sm font-medium text-stone-700">What will you do differently tomorrow?</label>
-          <textarea rows={4} className="w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none transition focus:border-stone-500" />
-
-          <button className="primary-button mt-6">Save entry</button>
-        </div>
-      </div>
-    </AppShell>
-  );
+  const { checkIns, saveCheckIn } = useAppState(); const existing = checkIns.find((entry) => entry.date === today()); const [reflection, setReflection] = useState(existing?.reflection ?? ''); const [difficulty, setDifficulty] = useState(existing?.difficulty ?? ''); const [saved, setSaved] = useState(false);
+  const save = (event: FormEvent) => { event.preventDefault(); saveCheckIn({ date: today(), mood: existing?.mood ?? 'okay', reflection, difficulty }); setSaved(true); };
+  return <AppShell><div className="container-shell max-w-3xl"><div className="pb-8"><div className="text-sm uppercase tracking-[0.18em] text-stone-500">Journal</div><h1 className="mt-2 text-3xl font-semibold text-stone-900">A private place to reflect</h1><p className="mt-2 text-stone-600">Reflection is for learning what worked—not judging yourself.</p></div><form onSubmit={save} className="glass-card p-6"><label className="mb-2 block text-sm font-medium text-stone-700">How was your day?</label><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} rows={6} placeholder="What did you accomplish? What did you learn?" className="w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none focus:border-stone-500" /><label className="mb-2 mt-6 block text-sm font-medium text-stone-700">What was difficult or what will you change tomorrow?</label><textarea value={difficulty} onChange={(event) => setDifficulty(event.target.value)} rows={4} placeholder="No time, low energy, or something you want to try differently..." className="w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none focus:border-stone-500" /><div className="mt-6 flex items-center gap-4"><button className="primary-button">Save entry</button>{saved && <span className="text-sm text-emerald-700">Saved locally for today.</span>}</div></form>{checkIns.length > 0 && <div className="mt-6 glass-card p-6"><h2 className="section-title">Recent check-ins</h2><div className="mt-4 space-y-3">{checkIns.slice().reverse().map((entry) => <div key={entry.date} className="rounded-2xl bg-stone-50 p-4"><div className="text-sm font-semibold text-stone-900">{entry.date}</div><p className="mt-2 text-sm text-stone-600">{entry.reflection || 'No reflection written.'}</p></div>)}</div></div>}</div></AppShell>;
 }

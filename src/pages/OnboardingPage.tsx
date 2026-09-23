@@ -1,67 +1,14 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AppShell from '../components/AppShell';
 import { goalOptions } from '../data/mockData';
+import type { GoalCategory } from '../types';
+import { useAppState } from '../state/AppState';
 
 export default function OnboardingPage() {
-  return (
-    <AppShell>
-      <div className="container-shell max-w-3xl">
-        <div className="glass-card p-6 sm:p-8">
-          <div className="text-sm uppercase tracking-[0.18em] text-stone-500">Onboarding</div>
-          <h1 className="mt-3 text-3xl font-semibold text-stone-900">What do you want to improve in the next 30 days?</h1>
-
-          <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {goalOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-left text-sm font-medium text-stone-700 transition hover:border-stone-400 hover:bg-white"
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="mt-8">
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              What is the one thing you most want to change?
-            </label>
-            <textarea
-              rows={3}
-              placeholder="I waste too much time scrolling and want to learn video editing."
-              className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-500"
-            />
-          </div>
-
-          <div className="mt-8">
-            <label className="mb-2 block text-sm font-medium text-stone-700">
-              What can you realistically commit each day?
-            </label>
-            <div className="flex flex-wrap gap-3">
-              {['20 minutes', '30 minutes', '1 hour'].map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-700 transition hover:border-stone-400"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-8 rounded-2xl bg-stone-100 p-5">
-            <div className="text-sm uppercase tracking-[0.15em] text-stone-500">30-day mission</div>
-            <div className="mt-3 text-2xl font-semibold text-stone-900">Learn video editing</div>
-            <div className="mt-2 text-sm text-stone-600">Daily action: Practice editing for 30 minutes.</div>
-          </div>
-
-          <div className="mt-8 flex justify-end">
-            <button type="button" className="primary-button">
-              Continue to my plan
-            </button>
-          </div>
-        </div>
-      </div>
-    </AppShell>
-  );
+  const navigate = useNavigate(); const { completeOnboarding } = useAppState();
+  const [categories, setCategories] = useState<GoalCategory[]>([]); const [mission, setMission] = useState(''); const [commitment, setCommitment] = useState(30); const [error, setError] = useState('');
+  const toggleCategory = (category: GoalCategory) => setCategories((current) => current.includes(category) ? current.filter((item) => item !== category) : [...current, category]);
+  const submit = () => { if (!categories.length || !mission.trim()) { setError('Choose at least one area and describe the change you want to make.'); return; } completeOnboarding({ categories, mission: mission.trim(), commitment }); navigate('/app/goals'); };
+  return <AppShell><div className="container-shell max-w-3xl"><div className="glass-card p-6 sm:p-8"><div className="text-sm uppercase tracking-[0.18em] text-stone-500">Step 1 of 3 · Your mission</div><h1 className="mt-3 text-3xl font-semibold text-stone-900">What do you want to improve in the next 30 days?</h1><p className="mt-3 text-stone-600">Choose the areas that matter. You can keep the daily plan intentionally small.</p><div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{goalOptions.map((option) => { const selected = categories.includes(option.value); return <button key={option.value} type="button" aria-pressed={selected} onClick={() => toggleCategory(option.value)} className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${selected ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-stone-50 text-stone-700 hover:border-stone-400 hover:bg-white'}`}>{option.label}</button>; })}</div><div className="mt-8"><label htmlFor="mission" className="mb-2 block text-sm font-medium text-stone-700">What is the ONE thing you most want to change?</label><textarea id="mission" value={mission} onChange={(event) => setMission(event.target.value)} rows={3} placeholder="I waste too much time scrolling and want to learn video editing." className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm outline-none transition focus:border-stone-500" /></div><div className="mt-8"><div className="mb-2 text-sm font-medium text-stone-700">What can you realistically commit each day?</div><div className="flex flex-wrap gap-3">{[20, 30, 60].map((option) => <button key={option} type="button" aria-pressed={commitment === option} onClick={() => setCommitment(option)} className={`rounded-full border px-4 py-2 text-sm transition ${commitment === option ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-stone-400'}`}>{option === 60 ? '1 hour' : `${option} minutes`}</button>)}</div></div><div className="mt-8 rounded-2xl bg-stone-100 p-5"><div className="text-sm uppercase tracking-[0.15em] text-stone-500">Your 30-day mission</div><div className="mt-3 text-xl font-semibold text-stone-900">{mission || 'Your main goal will appear here'}</div><div className="mt-2 text-sm text-stone-600">Start with one realistic action of about {commitment} minutes a day.</div></div>{error && <p className="mt-4 text-sm font-medium text-rose-700" role="alert">{error}</p>}<div className="mt-8 flex justify-end"><button type="button" onClick={submit} className="primary-button">Continue to my goals</button></div></div></div></AppShell>;
 }

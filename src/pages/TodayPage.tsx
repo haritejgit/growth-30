@@ -1,70 +1,9 @@
+import { useState, type FormEvent } from 'react';
 import AppShell from '../components/AppShell';
-import GoalCard from '../components/GoalCard';
-import { goals, dailyTasks } from '../data/mockData';
-
+import { useAppState } from '../state/AppState';
+const today = () => new Date().toISOString().slice(0, 10);
 export default function TodayPage() {
-  return (
-    <AppShell>
-      <div className="container-shell">
-        <section className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-sm uppercase tracking-[0.18em] text-stone-500">Day 7 / 30</div>
-            <h1 className="mt-2 text-3xl font-semibold text-stone-900">Your Mission Today</h1>
-          </div>
-          <div className="rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700">
-            3 / 4 complete
-          </div>
-        </section>
-
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            {dailyTasks.map((task) => (
-              <div key={task.id} className="rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-soft">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-xs uppercase tracking-[0.18em] text-stone-500">{task.category}</div>
-                    <h3 className="mt-2 text-xl font-semibold text-stone-900">{task.title}</h3>
-                  </div>
-                  <button className={`rounded-full px-3 py-2 text-xs font-semibold ${task.done ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-900 text-white'}`}>
-                    {task.done ? 'Done' : 'Start'}
-                  </button>
-                </div>
-
-                <p className="mt-3 text-sm text-stone-600">Target: {task.target}</p>
-
-                <div className="mt-4 h-2 overflow-hidden rounded-full bg-stone-200">
-                  <div className="h-full rounded-full bg-stone-900" style={{ width: `${task.progress}%` }} />
-                </div>
-                <div className="mt-2 text-right text-xs text-stone-500">{task.progress}% complete</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-6">
-            <div className="glass-card p-5">
-              <div className="section-title">Tonight’s live</div>
-              <div className="mt-4 rounded-2xl bg-stone-900 p-5 text-white">
-                <div className="text-xs uppercase tracking-[0.2em] text-stone-300">How to stay consistent</div>
-                <div className="mt-2 text-2xl font-semibold">9:00 PM</div>
-                <p className="mt-3 text-sm text-stone-300">Today’s challenge: 10-minute reset before bed</p>
-                <button className="mt-5 primary-button bg-white text-stone-900 hover:bg-stone-200">
-                  Join live
-                </button>
-              </div>
-            </div>
-
-            <div className="glass-card p-5">
-              <div className="section-title">Daily reflection</div>
-              <textarea
-                rows={5}
-                placeholder="How was your day? What did you accomplish? What stopped you?"
-                className="mt-4 w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none transition focus:border-stone-500"
-              />
-              <button className="mt-4 primary-button w-full">Save reflection</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppShell>
-  );
+  const { profile, tasks, toggleTask, checkIns, saveCheckIn } = useAppState(); const current = checkIns.find((item) => item.date === today()); const [mood, setMood] = useState<'great' | 'okay' | 'low'>(current?.mood ?? 'okay'); const [reflection, setReflection] = useState(current?.reflection ?? ''); const [difficulty, setDifficulty] = useState(current?.difficulty ?? ''); const todaysTasks = tasks.filter((task) => !task.date || task.date === today()); const completed = todaysTasks.filter((task) => task.done).length; const day = profile.startDate ? Math.min(30, Math.max(1, Math.floor((Date.now() - new Date(profile.startDate).getTime()) / 86400000) + 1)) : 1;
+  const submitCheckIn = (event: FormEvent) => { event.preventDefault(); saveCheckIn({ date: today(), mood, reflection, difficulty }); };
+  return <AppShell><div className="container-shell"><section className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm uppercase tracking-[0.18em] text-stone-500">Day {day} / 30</div><h1 className="mt-2 text-3xl font-semibold text-stone-900">Your mission today</h1><p className="mt-2 max-w-xl text-stone-600">{profile.mission || 'Choose one small action that makes today meaningful.'}</p></div><div className="rounded-full bg-emerald-100 px-3 py-2 text-sm font-semibold text-emerald-700">{completed} / {todaysTasks.length} complete</div></section><div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"><div className="space-y-4">{todaysTasks.length === 0 ? <div className="glass-card p-8 text-center"><h2 className="text-xl font-semibold text-stone-900">No daily actions yet</h2><p className="mt-2 text-stone-600">Create your first goal to give today a clear next step.</p><a href="/app/goals" className="primary-button mt-5">Go to goals</a></div> : todaysTasks.map((task) => <div key={task.id} className="rounded-[1.75rem] border border-stone-200 bg-white p-4 shadow-soft"><div className="flex items-start justify-between gap-4"><div><div className="text-xs uppercase tracking-[0.18em] text-stone-500">{task.category}</div><h3 className="mt-2 text-xl font-semibold text-stone-900">{task.title}</h3></div><button onClick={() => toggleTask(task.id)} className={`rounded-full px-3 py-2 text-xs font-semibold ${task.done ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-900 text-white'}`}>{task.done ? 'Done' : 'Mark done'}</button></div><p className="mt-3 text-sm text-stone-600">Target: {task.target}</p><div className="mt-4 h-2 overflow-hidden rounded-full bg-stone-200"><div className="h-full rounded-full bg-stone-900 transition-all" style={{ width: `${task.progress}%` }} /></div><div className="mt-2 text-right text-xs text-stone-500">{task.progress}% complete</div></div>)}</div><div className="space-y-6"><div className="glass-card p-5"><div className="section-title">Tonight’s live</div><div className="mt-4 rounded-2xl bg-stone-900 p-5 text-white"><div className="text-xs uppercase tracking-[0.2em] text-stone-300">A little direction for tomorrow</div><div className="mt-2 text-2xl font-semibold">9:00 PM</div><p className="mt-3 text-sm text-stone-300">Join the nightly session when you can. Missing one day does not erase your progress.</p><a href="/app/live" className="primary-button mt-5 bg-white text-stone-900 hover:bg-stone-200">View live</a></div></div><form onSubmit={submitCheckIn} className="glass-card p-5"><div className="section-title">Daily check-in</div><div className="mt-4 flex gap-2">{(['great', 'okay', 'low'] as const).map((item) => <button type="button" key={item} onClick={() => setMood(item)} className={`flex-1 rounded-xl border px-2 py-2 text-sm capitalize ${mood === item ? 'border-stone-900 bg-stone-900 text-white' : 'border-stone-200 bg-stone-50 text-stone-700'}`}>{item}</button>)}</div><label className="mt-4 block text-sm font-medium text-stone-700">What did you accomplish?</label><textarea value={reflection} onChange={(event) => setReflection(event.target.value)} rows={4} placeholder="A few honest lines are enough." className="mt-2 w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm outline-none focus:border-stone-500" /><label className="mt-4 block text-sm font-medium text-stone-700">What made today difficult?</label><select value={difficulty} onChange={(event) => setDifficulty(event.target.value)} className="mt-2 w-full rounded-2xl border border-stone-300 bg-stone-50 p-3 text-sm"><option value="">Choose if useful</option><option>No time</option><option>Low energy</option><option>Forgot</option><option>Unexpected work</option><option>Lost motivation</option><option>Other</option></select><button className="primary-button mt-4 w-full">Save check-in</button></form></div></div></div></AppShell>;
 }

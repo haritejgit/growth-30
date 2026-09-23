@@ -1,57 +1,7 @@
 import AppShell from '../components/AppShell';
 import StatCard from '../components/StatCard';
-import { journalEntries } from '../data/mockData';
-
+import { useAppState } from '../state/AppState';
 export default function ProgressPage() {
-  return (
-    <AppShell>
-      <div className="container-shell">
-        <div className="pb-8">
-          <div className="text-sm uppercase tracking-[0.18em] text-stone-500">Progress</div>
-          <h1 className="mt-2 text-3xl font-semibold text-stone-900">Day 18 / 30</h1>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Consistency" value="84%" />
-          <StatCard label="Completed" value="42 / 50" />
-          <StatCard label="Fitness" value="82%" />
-          <StatCard label="Passion" value="74%" />
-        </div>
-
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-          <div className="glass-card p-6">
-            <div className="text-xl font-semibold text-stone-900">30-day calendar</div>
-            <div className="mt-6 grid grid-cols-7 gap-2">
-              {Array.from({ length: 30 }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`flex h-10 items-center justify-center rounded-xl text-xs font-medium ${
-                    index % 3 === 0
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : index % 3 === 1
-                        ? 'bg-amber-100 text-amber-700'
-                        : 'bg-stone-200 text-stone-600'
-                  }`}
-                >
-                  {index + 1}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="glass-card p-6">
-            <div className="text-xl font-semibold text-stone-900">Milestones</div>
-            <div className="mt-5 space-y-4">
-              {journalEntries.map((entry) => (
-                <div key={entry.day} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
-                  <div className="text-sm font-semibold text-stone-900">{entry.day}</div>
-                  <div className="mt-2 text-sm text-stone-600">{entry.note}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppShell>
-  );
+  const { profile, goals, tasks, checkIns } = useAppState(); const completed = tasks.filter((task) => task.done).length; const completion = tasks.length ? Math.round((completed / tasks.length) * 100) : 0; const day = profile.startDate ? Math.min(30, Math.max(1, Math.floor((Date.now() - new Date(profile.startDate).getTime()) / 86400000) + 1)) : 1;
+  return <AppShell><div className="container-shell"><div className="pb-8"><div className="text-sm uppercase tracking-[0.18em] text-stone-500">Progress</div><h1 className="mt-2 text-3xl font-semibold text-stone-900">Day {day} / 30</h1><p className="mt-2 max-w-xl text-stone-600">See the evidence of showing up. A missed day is information, not failure.</p></div><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"><StatCard label="Completion" value={`${completion}%`} /><StatCard label="Completed actions" value={`${completed} / ${tasks.length}`} /><StatCard label="Active goals" value={String(goals.filter((goal) => goal.active).length)} /><StatCard label="Check-ins" value={String(checkIns.length)} /></div><div className="mt-8 grid gap-6 lg:grid-cols-[1fr_0.9fr]"><div className="glass-card p-6"><div className="text-xl font-semibold text-stone-900">30-day calendar</div><div className="mt-2 text-sm text-stone-500">Green means an action was completed. Amber means you checked in.</div><div className="mt-6 grid grid-cols-7 gap-2">{Array.from({ length: 30 }, (_, index) => index + 1).map((number) => <div key={number} className={`flex h-10 items-center justify-center rounded-xl text-xs font-medium ${number <= completed ? 'bg-emerald-100 text-emerald-700' : number === day ? 'border-2 border-stone-900 bg-white text-stone-900' : 'bg-stone-200 text-stone-600'}`}>{number}</div>)}</div></div><div className="glass-card p-6"><div className="text-xl font-semibold text-stone-900">Your journey</div><div className="mt-5 rounded-2xl bg-stone-50 p-4"><div className="text-sm font-medium text-stone-500">Starting point</div><div className="mt-2 text-stone-900">{profile.mission || 'Complete onboarding to define your mission.'}</div></div><div className="mt-5"><div className="text-sm font-medium text-stone-500">Keep building</div><p className="mt-2 text-sm leading-6 text-stone-600">Your progress grows as you complete actions and write honest check-ins. The goal is a record of change, not a perfect streak.</p></div></div></div></div></AppShell>;
 }

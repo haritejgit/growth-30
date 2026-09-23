@@ -1,25 +1,10 @@
+import { useState, type FormEvent } from 'react';
 import AppShell from '../components/AppShell';
-import GoalCard from '../components/GoalCard';
-import { goals } from '../data/mockData';
-
+import { useAppState } from '../state/AppState';
+import type { GoalCategory } from '../types';
+const categories: GoalCategory[] = ['Mind', 'Fitness', 'Health', 'Career', 'Education', 'Passion', 'Finance', 'Discipline', 'Reading', 'Other'];
 export default function GoalsPage() {
-  return (
-    <AppShell>
-      <div className="container-shell">
-        <div className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-sm uppercase tracking-[0.18em] text-stone-500">My goals</div>
-            <h1 className="mt-2 text-3xl font-semibold text-stone-900">Your personal mission</h1>
-          </div>
-          <button className="primary-button">Add goal</button>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} />
-          ))}
-        </div>
-      </div>
-    </AppShell>
-  );
+  const { goals, addGoal, profile } = useAppState(); const [open, setOpen] = useState(false); const [title, setTitle] = useState(''); const [category, setCategory] = useState<GoalCategory>(profile.categories[0] ?? 'Other'); const [description, setDescription] = useState(''); const [targetValue, setTargetValue] = useState('30'); const [targetUnit, setTargetUnit] = useState('minutes'); const [error, setError] = useState('');
+  const submit = (event: FormEvent) => { event.preventDefault(); if (!title.trim() || Number(targetValue) <= 0) { setError('Add a name and a positive target.'); return; } addGoal({ title: title.trim(), category, description: description.trim() || 'A small action that moves your mission forward.', targetValue: Number(targetValue), targetUnit, frequency: 'daily' }); setTitle(''); setDescription(''); setOpen(false); setError(''); };
+  return <AppShell><div className="container-shell"><div className="flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between"><div><div className="text-sm uppercase tracking-[0.18em] text-stone-500">My goals</div><h1 className="mt-2 text-3xl font-semibold text-stone-900">Your personal mission</h1><p className="mt-2 max-w-xl text-stone-600">Keep the plan realistic. One to three daily actions are enough.</p></div><button onClick={() => setOpen((value) => !value)} className="primary-button">{open ? 'Close' : 'Add goal'}</button></div>{open && <form onSubmit={submit} className="glass-card mb-6 grid gap-4 p-5 sm:grid-cols-2"><div className="sm:col-span-2"><label className="mb-2 block text-sm font-medium">Activity name</label><input value={title} onChange={(event) => setTitle(event.target.value)} placeholder="Practice video editing" className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm" /></div><div><label className="mb-2 block text-sm font-medium">Category</label><select value={category} onChange={(event) => setCategory(event.target.value as GoalCategory)} className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm">{categories.map((item) => <option key={item}>{item}</option>)}</select></div><div><label className="mb-2 block text-sm font-medium">Target</label><div className="flex gap-2"><input type="number" min="1" value={targetValue} onChange={(event) => setTargetValue(event.target.value)} className="w-24 rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm" /><input value={targetUnit} onChange={(event) => setTargetUnit(event.target.value)} placeholder="minutes" className="min-w-0 flex-1 rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm" /></div></div><div className="sm:col-span-2"><label className="mb-2 block text-sm font-medium">Description <span className="font-normal text-stone-500">(optional)</span></label><textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={2} className="w-full rounded-2xl border border-stone-300 bg-stone-50 px-4 py-3 text-sm" /></div>{error && <p className="text-sm text-rose-700 sm:col-span-2">{error}</p>}<div className="sm:col-span-2"><button className="primary-button" type="submit">Save daily goal</button></div></form>}{goals.length === 0 ? <div className="glass-card p-8 text-center"><h2 className="text-xl font-semibold text-stone-900">Your plan starts with one small action.</h2><p className="mx-auto mt-2 max-w-md text-stone-600">Add a daily activity connected to your mission. You can adjust it later—progress over perfection.</p><button onClick={() => setOpen(true)} className="primary-button mt-5">Create your first goal</button></div> : <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{goals.filter((goal) => goal.active).map((goal) => <div key={goal.id} className="glass-card p-5"><div className="flex items-start justify-between gap-4"><div><div className="text-sm text-stone-500">{goal.category}</div><h3 className="mt-1 text-xl font-semibold text-stone-900">{goal.title}</h3></div><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${goal.color}`}>daily</span></div><p className="mt-3 text-sm text-stone-600">{goal.description}</p><div className="mt-4 flex justify-between text-sm text-stone-700"><span>Target</span><strong>{goal.targetValue} {goal.targetUnit}</strong></div></div>)}</div>}</div></AppShell>;
 }
